@@ -2,19 +2,17 @@
 
 import sqlite3
 from contextlib import closing
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .models import Project
 
 
 class ProjectRepository:
-    """Store and retrieve projects in a SQLite database."""
-
     def __init__(self, database_path: str | Path) -> None:
         self.database_path = str(database_path)
 
     def initialize(self) -> None:
-        """Create the projects table if it does not already exist."""
         with closing(sqlite3.connect(self.database_path)) as connection:
             with connection:
                 connection.execute(
@@ -23,13 +21,19 @@ class ProjectRepository:
                         id INTEGER PRIMARY KEY,
                         name TEXT NOT NULL,
                         path TEXT,
-                        description TEXT NOT NULL DEFAULT ''
+                        description TEXT NOT NULL DEFAULT '',
+                        archived_at TEXT
                     )
                     """
                 )
+                columns = {
+                    row[1]
+                    for row in connection.execute("PRAGMA table_info(projects)")
+                }
+                if "archived_at" not in columns:
+                    connection.execute("ALTER TABLE projects ADD COLUMN archived_at TEXT")
 
     def save(self, project: Project) -> Project:
-        """Insert a project and return it with its database ID."""
         if project.id is not None:
             raise ValueError("Cannot save a project that already has an ID")
 
@@ -49,11 +53,10 @@ class ProjectRepository:
         )
 
     def get(self, project_id: int) -> Project | None:
-        """Return a project by ID, or None when no such project exists."""
         with closing(sqlite3.connect(self.database_path)) as connection:
             connection.row_factory = sqlite3.Row
             row = connection.execute(
-                "SELECT id, name, path, description FROM projects WHERE id = ?",
+                "SELECT id, name, path, description, archived_at FROM projects WHERE id = ?",
                 (project_id,),
             ).fetchone()
 
@@ -65,4 +68,64 @@ class ProjectRepository:
             name=row["name"],
             path=row["path"],
             description=row["description"],
+            archived_at=row["archived_at"],
         )
+
+    def list(self, include_archived: bool = False) -> list[Project]:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.row_factory = sqlite3.Row
+            where_clause = "" if include_archived else "WHERE archived_at IS NULL"
+            rows = connection.execute(
+                f"SELECT id, name, path, description, archived_at FROM projects "
+                f"{where_clause} ORDER BY id"
+            ).fetchall()
+
+        return [
+            Project(
+                id=row["id"],
+                name=row["name"],
+                path=row["path"],
+                description=row["description"],
+                archived_at=row["archived_at"],
+            )
+            for row in rows
+        ]
+
+    def update(self, project_id: int, changes: dict[str, str | None]) -> Project | None:
+        allowed_fields = {"name", "path", "description"}
+        if not changes or not changes.keys() <= allowed_fields:
+            raise ValueError("Changes must include one or more editable project fields")
+
+        assignments = ", ".join(f"{field} = ?" for field in changes)
+        values = [*changes.values(), project_id]
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            with connection:
+                cursor = connection.execute(
+                    f"UPDATE projects SET {assignments} WHERE id = ?", values
+                )
+                if cursor.rowcount == 0:
+                    return None
+
+        return self.get(project_id)
+
+    def archive(self, project_id: int) -> bool:
+        archived_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            with connection:
+                connection.execute(
+                    "UPDATE projects SET archived_at = COALESCE(archived_at, ?) WHERE id = ?",
+                    (archived_at, project_id),
+                )
+                return connection.execute(
+                    "SELECT 1 FROM projects WHERE id = ?", (project_id,)
+                ).fetchone() is not None
+
+    def restore(self, project_id: int) -> bool:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            with connection:
+                connection.execute(
+                    "UPDATE projects SET archived_at = NULL WHERE id = ?", (project_id,)
+                )
+                return connection.execute(
+                    "SELECT 1 FROM projects WHERE id = ?", (project_id,)
+                ).fetchone() is not None

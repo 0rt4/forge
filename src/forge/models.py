@@ -5,9 +5,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Project:
-    """A developer project tracked by Forge."""
-
     name: str
     path: str | None = None
     description: str = ""
     id: int | None = None
+    archived_at: str | None = None

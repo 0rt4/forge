@@ -30,6 +30,22 @@ class ProjectRepositoryTests(unittest.TestCase):
 
         self.assertEqual(table, ("projects",))
 
+    def test_initialize_migrates_existing_table_without_losing_projects(self) -> None:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            with connection:
+                connection.execute(
+                    "CREATE TABLE projects (id INTEGER PRIMARY KEY, name TEXT NOT NULL, "
+                    "path TEXT, description TEXT NOT NULL DEFAULT '')"
+                )
+                connection.execute(
+                    "INSERT INTO projects (id, name, path, description) "
+                    "VALUES (1, 'Existing', NULL, '')"
+                )
+
+        self.repository.initialize()
+
+        self.assertEqual(self.repository.get(1), Project(id=1, name="Existing"))
+
     def test_saved_project_retains_its_data_when_read_from_database(self) -> None:
         self.repository.initialize()
         project = Project(
@@ -57,6 +73,40 @@ class ProjectRepositoryTests(unittest.TestCase):
         self.repository.initialize()
 
         self.assertIsNone(self.repository.get(999))
+
+    def test_list_returns_projects_in_id_order(self) -> None:
+        self.repository.initialize()
+        first = self.repository.save(Project(name="First"))
+        second = self.repository.save(Project(name="Second"))
+
+        self.assertEqual(self.repository.list(), [first, second])
+
+    def test_archive_and_restore_control_default_listing(self) -> None:
+        self.repository.initialize()
+        project = self.repository.save(Project(name="Keep me"))
+
+        self.assertTrue(self.repository.archive(project.id))
+        archived = self.repository.get(project.id)
+        self.assertIsNotNone(archived)
+        self.assertIsNotNone(archived.archived_at)
+        self.assertEqual(self.repository.list(), [])
+        self.assertEqual(self.repository.list(include_archived=True), [archived])
+        self.assertTrue(self.repository.archive(project.id))  # idempotent
+
+        self.assertTrue(self.repository.restore(project.id))
+        self.assertIsNone(self.repository.get(project.id).archived_at)
+        self.assertEqual(self.repository.list(), [project])
+        self.assertTrue(self.repository.restore(project.id))  # idempotent
+        self.assertFalse(self.repository.archive(999))
+        self.assertFalse(self.repository.restore(999))
+
+    def test_update_changes_only_supplied_fields(self) -> None:
+        self.repository.initialize()
+        project = self.repository.save(Project(name="Before", path="/old"))
+
+        updated = self.repository.update(project.id, {"name": "After"})
+
+        self.assertEqual(updated, Project(id=project.id, name="After", path="/old"))
 
 
 if __name__ == "__main__":
