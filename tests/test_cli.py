@@ -112,6 +112,21 @@ class CliTests(unittest.TestCase):
 
         self.assertIn("Name: Forge", self.invoke("show", "1")[1])
 
+    def test_add_and_edit_reject_a_path_already_used_by_another_project(self) -> None:
+        self.invoke("add", "First", "--path", "/work/forge")
+
+        status, output, error = self.invoke("add", "Second", "--path", "/work/forge")
+        self.assertEqual(status, 2)
+        self.assertEqual(output, "")
+        self.assertIn("already used by project 1", error)
+
+        self.invoke("add", "Second", "--path", "/work/other")
+        status, output, error = self.invoke("edit", "2", "--path", "/work/forge")
+        self.assertEqual(status, 2)
+        self.assertEqual(output, "")
+        self.assertIn("already used by project 1", error)
+        self.assertIn("Path: /work/other", self.invoke("show", "2")[1])
+
 
 if __name__ == "__main__":
     unittest.main()

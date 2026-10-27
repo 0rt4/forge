@@ -34,7 +34,7 @@ Se puede seleccionar otra base con `--db`. La opción global debe ir antes del s
 python -m forge --db /tmp/forge.db init
 ```
 
-Cada proyecto tiene un identificador asignado por SQLite, un nombre, una ruta opcional y una descripción opcional. El nombre es obligatorio: Forge elimina espacios al principio y al final, y rechaza nombres vacíos o compuestos solo por espacios. La ruta se almacena como texto; Forge no comprueba si el directorio existe ni lo modifica.
+Cada proyecto tiene un identificador asignado por SQLite, un nombre, una ruta opcional y una descripción opcional. El nombre es obligatorio: Forge elimina espacios al principio y al final, y rechaza nombres vacíos o compuestos solo por espacios. Se permiten nombres repetidos, pero la misma cadena de ruta no puede asignarse a más de un proyecto, incluidos los archivados. Forge conserva la ruta tal como se proporciona; no comprueba si el directorio existe ni normaliza rutas equivalentes.
 
 ## Funciones y comandos disponibles
 

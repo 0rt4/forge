@@ -8,6 +8,10 @@ from pathlib import Path
 from .models import Project
 
 
+class ProjectPathConflictError(ValueError):
+    """Raised when another project already uses the requested path."""
+
+
 class ProjectRepository:
     def __init__(self, database_path: str | Path) -> None:
         self.database_path = str(database_path)
@@ -39,6 +43,14 @@ class ProjectRepository:
 
         with closing(sqlite3.connect(self.database_path)) as connection:
             with connection:
+                if project.path:
+                    owner = connection.execute(
+                        "SELECT id FROM projects WHERE path = ?", (project.path,)
+                    ).fetchone()
+                    if owner is not None:
+                        raise ProjectPathConflictError(
+                            f"Path is already used by project {owner[0]}: {project.path}"
+                        )
                 cursor = connection.execute(
                     "INSERT INTO projects (name, path, description) VALUES (?, ?, ?)",
                     (project.name, project.path, project.description),
@@ -96,10 +108,27 @@ class ProjectRepository:
         if not changes or not changes.keys() <= allowed_fields:
             raise ValueError("Changes must include one or more editable project fields")
 
+        changes = dict(changes)
         assignments = ", ".join(f"{field} = ?" for field in changes)
         values = [*changes.values(), project_id]
         with closing(sqlite3.connect(self.database_path)) as connection:
             with connection:
+                exists = connection.execute(
+                    "SELECT 1 FROM projects WHERE id = ?", (project_id,)
+                ).fetchone()
+                if exists is None:
+                    return None
+
+                path = changes.get("path")
+                if "path" in changes and path:
+                    owner = connection.execute(
+                        "SELECT id FROM projects WHERE path = ? AND id != ?",
+                        (path, project_id),
+                    ).fetchone()
+                    if owner is not None:
+                        raise ProjectPathConflictError(
+                            f"Path is already used by project {owner[0]}: {path}"
+                        )
                 cursor = connection.execute(
                     f"UPDATE projects SET {assignments} WHERE id = ?", values
                 )

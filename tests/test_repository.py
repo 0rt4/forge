@@ -7,7 +7,7 @@ from contextlib import closing
 from pathlib import Path
 
 from forge.models import Project
-from forge.repository import ProjectRepository
+from forge.repository import ProjectPathConflictError, ProjectRepository
 
 
 class ProjectRepositoryTests(unittest.TestCase):
@@ -107,6 +107,37 @@ class ProjectRepositoryTests(unittest.TestCase):
         updated = self.repository.update(project.id, {"name": "After"})
 
         self.assertEqual(updated, Project(id=project.id, name="After", path="/old"))
+
+    def test_save_allows_duplicate_names_but_rejects_identical_paths(self) -> None:
+        self.repository.initialize()
+        first = self.repository.save(Project(name="Same", path="/work/forge"))
+        second = self.repository.save(Project(name="Same", path="/work/other"))
+
+        self.assertEqual(first.name, second.name)
+        self.assertEqual(first.path, "/work/forge")
+        with self.assertRaisesRegex(ProjectPathConflictError, "project 1"):
+            self.repository.save(Project(name="Different", path="/work/forge"))
+
+    def test_update_allows_own_path_but_rejects_another_projects_path(self) -> None:
+        self.repository.initialize()
+        first = self.repository.save(Project(name="First", path="/work/forge"))
+        second = self.repository.save(Project(name="Second", path="/work/other"))
+
+        updated = self.repository.update(first.id, {"path": "/work/forge"})
+        self.assertEqual(updated.path, "/work/forge")
+
+        with self.assertRaisesRegex(ProjectPathConflictError, "project 1"):
+            self.repository.update(second.id, {"path": "/work/forge"})
+
+        self.assertEqual(self.repository.get(second.id).path, "/work/other")
+
+    def test_archived_project_path_remains_reserved(self) -> None:
+        self.repository.initialize()
+        project = self.repository.save(Project(name="Archived", path="/work/forge"))
+        self.repository.archive(project.id)
+
+        with self.assertRaises(ProjectPathConflictError):
+            self.repository.save(Project(name="New", path="/work/forge"))
 
 
 if __name__ == "__main__":

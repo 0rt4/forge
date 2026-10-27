@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .models import Project
-from .repository import ProjectRepository
+from .repository import ProjectPathConflictError, ProjectRepository
 from .services import ProjectService, ValidationError
 
 
@@ -123,6 +123,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"Restored project {args.id}.")
         return 0
     except ValidationError as error:
+        print(f"forge: {error}", file=sys.stderr)
+        return 2
+    except ProjectPathConflictError as error:
         print(f"forge: {error}", file=sys.stderr)
         return 2
     except (OSError, sqlite3.Error) as error:
