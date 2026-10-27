@@ -32,6 +32,9 @@ class ProjectService:
     def list(self, include_archived: bool = False) -> list[Project]:
         return self.repository.list(include_archived=include_archived)
 
+    def search(self, query: str, include_archived: bool = False) -> list[Project]:
+        return self.repository.search(query, include_archived=include_archived)
+
     def edit(self, project_id: int, changes: dict[str, str | None]) -> Project | None:
         validated_changes = dict(changes)
         if "name" in validated_changes:

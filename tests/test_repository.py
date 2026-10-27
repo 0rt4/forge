@@ -81,6 +81,22 @@ class ProjectRepositoryTests(unittest.TestCase):
 
         self.assertEqual(self.repository.list(), [first, second])
 
+    def test_search_matches_name_or_path_case_insensitively(self) -> None:
+        self.repository.initialize()
+        by_name = self.repository.save(Project(name="Forge Editor"))
+        by_path = self.repository.save(Project(name="Other", path="/work/forge"))
+        self.repository.save(Project(name="Unrelated", path="/tmp/other"))
+
+        self.assertEqual(self.repository.search("FORGE"), [by_name, by_path])
+
+    def test_search_excludes_archived_projects_unless_requested(self) -> None:
+        self.repository.initialize()
+        project = self.repository.save(Project(name="Archived Forge"))
+        self.repository.archive(project.id)
+
+        self.assertEqual(self.repository.search("Forge"), [])
+        self.assertEqual(self.repository.search("Forge", include_archived=True)[0].id, project.id)
+
     def test_archive_and_restore_control_default_listing(self) -> None:
         self.repository.initialize()
         project = self.repository.save(Project(name="Keep me"))

@@ -38,6 +38,10 @@ def _build_parser() -> argparse.ArgumentParser:
     list_parser = commands.add_parser("list", help="list projects")
     list_parser.add_argument("--all", action="store_true", help="include archived projects")
 
+    search_parser = commands.add_parser("search", help="search projects by name or path")
+    search_parser.add_argument("query", help="text to find in project names or paths")
+    search_parser.add_argument("--all", action="store_true", help="include archived projects")
+
     show_parser = commands.add_parser("show", help="show a project")
     show_parser.add_argument("id", type=int, help="project ID")
 
@@ -86,6 +90,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"Added project {project.id}: {project.name}")
         elif args.command == "list":
             projects = service.list(include_archived=args.all)
+            if not projects:
+                print("No projects found.")
+            else:
+                for project in projects:
+                    status = "\tarchived" if project.archived_at else ""
+                    print(f"{project.id}\t{project.name}\t{project.path or '-'}{status}")
+        elif args.command == "search":
+            projects = service.search(args.query, include_archived=args.all)
             if not projects:
                 print("No projects found.")
             else:

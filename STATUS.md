@@ -8,7 +8,7 @@ Forge debe gestionar sus propios registros sin modificar el código fuente de lo
 
 ## Estado actual
 
-Primer incremento completado: modelo de proyecto y persistencia básica.
+Forge cuenta con persistencia SQLite y una CLI para gestionar proyectos.
 
 ### Implementado
 
@@ -18,23 +18,18 @@ Primer incremento completado: modelo de proyecto y persistencia básica.
 - Inicialización de la tabla de proyectos.
 - Guardado de proyectos.
 - Consulta de proyectos por identificador.
-- Tres pruebas automatizadas de persistencia.
-- Pruebas ejecutadas correctamente con `unittest`.
+- Pruebas automatizadas de persistencia, reglas de aplicación y CLI.
+- CLI para inicializar, añadir, listar, consultar, editar, archivar y restaurar proyectos.
+- Búsqueda parcial sin distinción de mayúsculas en nombre y ruta; por defecto omite archivados.
 
 ### Pendiente
 
-- Interfaz de línea de comandos (CLI).
-- Registro de proyectos desde la terminal.
-- Listado de proyectos registrados.
-- Consulta de detalles de un proyecto desde la terminal.
+- Experiencia de instalación y distribución pulida para usuarios finales.
+- Definir si el MVP requiere filtros adicionales o exportación de datos.
 
 ## Siguiente incremento propuesto
 
-Planificar una CLI mínima que permita registrar proyectos, listarlos y consultar sus detalles.
-
-Antes de implementar, revisar el estado real del repositorio, identificar los cambios necesarios y presentar un plan para mi aprobación.
-
-No ampliar el alcance sin autorización.
+Evaluar la experiencia de instalación y distribución desde una copia limpia del proyecto.
 
 ## Criterios para dar por terminado un incremento
 

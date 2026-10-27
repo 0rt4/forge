@@ -68,6 +68,14 @@ forge list --all
 
 Las filas archivadas llevan la marca `archived`.
 
+### Buscar proyectos
+
+```bash
+forge search forge
+```
+
+Busca coincidencias parciales sin distinguir mayúsculas y minúsculas en el nombre y la ruta. Por defecto excluye proyectos archivados; usa `--all` para incluirlos.
+
 ### Consultar un proyecto
 
 ```bash
@@ -109,4 +117,4 @@ Las pruebas crean bases SQLite temporales y comprueban la inicialización repeti
 
 ## Alcance actual
 
-La lógica de aplicación valida y normaliza los nombres antes de persistirlos, separada de la CLI y del repositorio SQLite. La versión actual permite inicializar la base, añadir, listar, consultar, editar, archivar y restaurar proyectos. Todavía no incluye tareas, automatizaciones, filtros, salida JSON ni configuración interactiva.
+La lógica de aplicación valida y normaliza los nombres antes de persistirlos, separada de la CLI y del repositorio SQLite. La versión actual permite inicializar la base, añadir, listar, buscar, consultar, editar, archivar y restaurar proyectos. Todavía no incluye tareas, automatizaciones, filtros avanzados, salida JSON ni configuración interactiva.

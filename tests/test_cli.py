@@ -56,6 +56,23 @@ class CliTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(output.strip(), "No projects found.")
 
+    def test_search_finds_by_name_or_path_and_can_include_archived(self) -> None:
+        self.invoke("add", "Forge Editor")
+        self.invoke("add", "Other", "--path", "/work/forge")
+        self.invoke("add", "Archived Forge")
+        self.invoke("archive", "3")
+
+        status, output, error = self.invoke("search", "FORGE")
+        self.assertEqual(status, 0)
+        self.assertEqual(error, "")
+        self.assertIn("1\tForge Editor", output)
+        self.assertIn("2\tOther\t/work/forge", output)
+        self.assertNotIn("Archived Forge", output)
+
+        status, output, _ = self.invoke("search", "forge", "--all")
+        self.assertEqual(status, 0)
+        self.assertIn("3\tArchived Forge\t-\tarchived", output)
+
     def test_show_missing_project_returns_error(self) -> None:
         status, output, error = self.invoke("show", "99")
 

@@ -103,6 +103,29 @@ class ProjectRepository:
             for row in rows
         ]
 
+    def search(self, query: str, include_archived: bool = False) -> list[Project]:
+        archived_clause = "" if include_archived else "AND archived_at IS NULL"
+        pattern = f"%{query}%"
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                "SELECT id, name, path, description, archived_at FROM projects "
+                "WHERE (name LIKE ? COLLATE NOCASE OR path LIKE ? COLLATE NOCASE) "
+                f"{archived_clause} ORDER BY id",
+                (pattern, pattern),
+            ).fetchall()
+
+        return [
+            Project(
+                id=row["id"],
+                name=row["name"],
+                path=row["path"],
+                description=row["description"],
+                archived_at=row["archived_at"],
+            )
+            for row in rows
+        ]
+
     def update(self, project_id: int, changes: dict[str, str | None]) -> Project | None:
         allowed_fields = {"name", "path", "description"}
         if not changes or not changes.keys() <= allowed_fields:
