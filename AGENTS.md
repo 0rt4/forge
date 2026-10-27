@@ -18,7 +18,10 @@ Actualmente, Forge mantiene los datos de sus proyectos en SQLite. Su objetivo in
 - No sobrescribas ni descartes cambios existentes sin mi autorización.
 - No modifiques los archivos de los proyectos que Forge registra. Forge gestiona sus propios registros, no el contenido de esos proyectos.
 - No elimines directorios de proyectos al modificar o archivar sus registros.
+<<<<<<< Updated upstream
 - No dejes comentarios en el codigo a menos que sea necesario detallar un algoritmo complejo
+=======
+>>>>>>> Stashed changes
 
 ## Código y pruebas
 
